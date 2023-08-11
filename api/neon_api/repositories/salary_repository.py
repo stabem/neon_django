@@ -1,4 +1,4 @@
-from django.db.models import Avg, Max, Min
+from django.db.models import Avg, Max, Min, F
 
 from neon_api.models import User as UserModel, User
 from neon_api.models import Salary as SalaryModel
@@ -44,9 +44,11 @@ class SalaryRepository:
 
     def get_dashboard_data(self, cpf=None):
         salaries = self.get_all_salaries() if cpf is None else self.get_salaries_by_cpf(cpf)
+        salaries = salaries.annotate(net_salary=F('amount') - F('discount'))
+
         return {
-            "averageSalary": salaries.aggregate(Avg('amount'))['amount__avg'],
+            "averageSalary": salaries.aggregate(Avg('net_salary'))['net_salary__avg'],
             "averageDiscount": salaries.aggregate(Avg('discount'))['discount__avg'],
-            "highestSalary": salaries.aggregate(Max('amount'))['amount__max'],
-            "lowestSalary": salaries.aggregate(Min('amount'))['amount__min'],
+            "highestSalary": salaries.aggregate(Max('net_salary'))['net_salary__max'],
+            "lowestSalary": salaries.aggregate(Min('net_salary'))['net_salary__min'],
         }
